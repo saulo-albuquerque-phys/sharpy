@@ -16,16 +16,27 @@ from ripplegw.waveforms import IMRPhenomD
 from ripplegw import ms_to_Mc_eta
 
 import sys
-
-
 from astropy import constants as const
 M_sun = const.M_sun.value
 G = const.G.value
 c = const.c.value
 pc = const.pc.value
 
+### presaved options
+case_bbh='GW150914'
+case_bns='Gw170817'
+
+case_bbh_data={"name":case_bbh,'trigtime':1126259462.4, 'T':2, 'sampling_rate':1024, 'flow':20, 'fhigh':512, 'datalen_download':32, }
+case_bns_data={"name":case_bns,'trigtime':1187008882.4, 'T':2, 'sampling_rate':4096, 'flow':20, 'fhigh':2048, 'datalen_download':128, }
 
 
+
+#######make your choice here!!!!!
+
+choice='bbh'
+case_choice_name='case_'+choice
+case_choice_data=case_choice_name+'_data'
+    
 
 class GWDetector:
     """
@@ -561,11 +572,17 @@ def template_mlgw_bns(params, frequency_array):
     lambda_1                = params[11]
     lambda_2                = params[12]
     phic                    = params[4] 
-    dist_mpc                = np.exp(params[2]) # Distance to source in Mpc
+    dist_mpc                = jnp.exp(params[2]) # Distance to source in Mpc
     inclination             = params[3] # Inclination Angle
     time_shift              = params[8]
-        
-    hp_mlgw_bns,hc_mlgw_bns             = mlgw_bns_one_waveform(jnp.array([frequency_array]),mtot,1/q,lambda_1,lambda_2, chi1, chi2,dist_mpc,phic,0,inclination)
+
+    #frequency=jnp.array([frequency_array])
+    #theta_mlgw_bns      = jnp.array([frequency,mtot,1/q,lambda_1,lambda_2, chi1, chi2,dist_mpc,phic,0,inclination])
+    # hp, hc       = IMRPhenomD.gen_IMRPhenomD_hphc(frequency_array, theta_ripple, frequency_array[0]) 
+    # hp, hc            = jax.vmap(IMRPhenomD.gen_IMRPhenomD_hphc, in_axes=(0, None, None))(jnp.array([frequency_array]), theta_ripple, 20)
+    #  jax.vmap(IMRPhenomD.gen_IMRPhenomD_hphc, in_axes=(0, None, None))(jnp.array([frequency_array]), theta_ripple, 20
+    hp_mlgw_bns,hc_mlgw_bns             = jax.vmap(mlgw_bns_one_waveform, in_axes=(0,None,None,None,None,None,None,None,None,None,None))(jnp.array([frequency_array]), mtot,1/q,lambda_1,lambda_2, chi1, chi2,dist_mpc,phic,0,inclination)
+    #                                               #(jnp.array(frequency_array]),mtot,1/q,lambda_1,lambda_2, chi1, chi2,dist_mpc,phic,0,inclination)
     
     hp,hc=hp_mlgw_bns,-hc_mlgw_bns
     
@@ -606,7 +623,7 @@ def project_waveform_mlgw_bns(params, detector_dictionary):
     timeshift       = timedelay
     timeshift       = timeshift + (params[8] + (detector_dictionary.T - 1) )
     
-    shift           = 2.0*np.pi*f*timeshift
+    shift           = 2.0*jnp.pi*f*timeshift
 
   
     h = (fplus*h_plus + fcross*h_cross)*(jnp.cos(shift)-1j*jnp.sin(shift))
@@ -629,3 +646,4 @@ def single_detector_log_likelihood_mlgw_bns(params, detector_dictionary):
     h = project_waveform_mlgw_bns(params, detector_dictionary)
     residuals = detector_dictionary.FrequencySeries - h
     return -detector_dictionary.TwoDeltaTOverN * jnp.vdot(residuals / jnp.sqrt(detector_dictionary.sigmasq), residuals / jnp.sqrt(detector_dictionary.sigmasq)).real
+
