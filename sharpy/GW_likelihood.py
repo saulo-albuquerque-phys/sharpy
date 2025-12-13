@@ -551,27 +551,28 @@ def single_detector_log_likelihood(params, detector_dictionary):
 
 
 
-
-
 def template_mlgw_bns(params, frequency_array):
     mc                      = params[6]
     q                       = params[7]
     m1_msun, m2_msun        = McQ2Masses(mc, q)
+    mtot                    = m1_msun+m2_msun
     chi1                    = params[9] # Dimensionless spin
     chi2                    = params[10]
-    tc                      = 0.0 # Time of coalescence in seconds
-    phic                    = params[4] # Phase of coalescence
-    dist_mpc                = jnp.exp(params[2]) # Distance to source in Mpc
+    lambda_1                = params[11]
+    lambda_2                = params[12]
+    phic                    = params[4] 
+    dist_mpc                = np.exp(params[2]) # Distance to source in Mpc
     inclination             = params[3] # Inclination Angle
+    time_shift              = params[8]
+        
+    hp_mlgw,hc_mlgw             = mlgw_bns_one_waveform(jnp.array([frequency_array]),mtot,1/q,lambda_1,lambda_2, chi1, chi2,dist_mpc,phic,0,inclination)
+    
+    hp,hc=hp_mlgw_bns,-hc_mlgw_bns
+    
+    ### the 1/q is to adapt the conventions for the mass ratio (from the interval [0.5,1] to the interval [1,2])
+    ### the minus sign compensates the difference in the convention for h=hp+- i*hc
+    ### the zero value of the time_shift in the argument is because it will be considered already in "project_waveform_...." function.
 
-    # The PhenomD waveform model is parameterized with the chirp mass and symmetric mass ratio
-    Mc, eta           = ms_to_Mc_eta(jnp.array([m1_msun, m2_msun]))
-
-    theta_ripple      = jnp.array([Mc, eta, chi1, chi2, dist_mpc, tc, phic, inclination])
-    # hp, hc       = IMRPhenomD.gen_IMRPhenomD_hphc(frequency_array, theta_ripple, frequency_array[0]) 
-    hp, hc            = jax.vmap(IMRPhenomD.gen_IMRPhenomD_hphc, in_axes=(0, None, None))(jnp.array([frequency_array]), theta_ripple, 20)
-
-    # jax.debug.print("Max hp: {}, Max hc: {}", jnp.max(jnp.abs(hp)), jnp.max(jnp.abs(hc)))
     return hp, hc 
 
 
