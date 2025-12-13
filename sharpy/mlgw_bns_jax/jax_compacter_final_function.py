@@ -8,7 +8,7 @@ from .jax_compacter_model_functions import combine_amp_phase_jax,combine_residua
 from .jax_compacter_downsampling_interpolation import resample, linear_resample_jax
 from .jax_compacter_dataset_generation import mlgw_bns_prefactor_jax, eta
 
-model_dataset_bibl=numpy.load("mlgw_bns_jax/data_default_NN/mlp_jax_dataset_training_hyperparams.npz")
+model_dataset_bibl=numpy.load("./data_default_NN/mlp_jax_dataset_training_hyperparams.npz")
 
 frequencies_hz=model_dataset_bibl['frequencies_hz']
 frequencies=model_dataset_bibl['frequencies']
