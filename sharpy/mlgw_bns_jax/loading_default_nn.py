@@ -3,7 +3,7 @@ import jax
 import jax.numpy as jnp
 
 
-loadweightbiases = np.load("mlgw_bns_jax/data_default_NN/mlp_jax_params.npz")
+loadweightbiases = np.load("./data_default_NN/mlp_jax_params.npz")
 
 weightsload = []
 biasesload = []
@@ -16,20 +16,20 @@ while f"W{i}" in loadweightbiases:
 
 parameters_NN = (weightsload, biasesload)
 
-scaler_data = np.load("mlgw_bns_jax/data_default_NN/scaler_params.npz")
+scaler_data = np.load("./data_default_NN/scaler_params.npz")
 mean = jnp.array(scaler_data["mean"])
 scale = jnp.array(scaler_data["scale"])
 
-indexes_downsampling=np.loadtxt("mlgw_bns_jax/data_default_NN/mlp_jax_downsampling_indexes.dat")
-indexes_downsampling_amplitude=np.loadtxt("mlgw_bns_jax/data_default_NN/mlp_jax_downsampling_indexes_amplitude.dat")
-indexes_downsampling_phase=np.loadtxt("mlgw_bns_jax/data_default_NN/mlp_jax_downsampling_indexes_phase.dat")
+indexes_downsampling=np.loadtxt("./data_default_NN/mlp_jax_downsampling_indexes.dat")
+indexes_downsampling_amplitude=np.loadtxt("./data_default_NN/mlp_jax_downsampling_indexes_amplitude.dat")
+indexes_downsampling_phase=np.loadtxt("./data_default_NN/mlp_jax_downsampling_indexes_phase.dat")
 int_indexes_amp = indexes_downsampling_amplitude.astype(int)
 int_indexes_phase= indexes_downsampling_phase.astype(int)
 int_list_indexes_amp = indexes_downsampling_amplitude.astype(int).tolist()
 int_list_indexes_phase= indexes_downsampling_phase.astype(int).tolist()
 
 
-pca_diction=np.load("mlgw_bns_jax/data_default_NN/mlp_jax_pca_params.npz")
+pca_diction=np.load("./data_default_NN/mlp_jax_pca_params.npz")
 
 pca_data_exponent=jnp.array(pca_diction['pca_exponent_data'])
 pc_exponent=pca_data_exponent
@@ -42,10 +42,10 @@ pca_data_mean=jnp.array(pca_diction['pca_data_mean'])
 
 @jax.jit
 def mlp_forward_jax(x):
-    # 1️⃣ scale input
+    #  scale input
     x_scaled = (x - mean) / scale
 
-    # 2️⃣ forward pass (hard-coded)
+    #  forward pass (hard-coded)
     W0, W1, W2 =parameters_NN[0]
     b0, b1, b2 =parameters_NN[1]
 
