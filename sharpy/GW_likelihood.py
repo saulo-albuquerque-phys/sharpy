@@ -548,7 +548,7 @@ def single_detector_log_likelihood(params, detector_dictionary):
 
 
 
-from mlgw_bns_jax.jax_compacter_final_function import mlgw_bns_one_waveform
+from sharpy.mlgw_bns_jax.jax_compacter_final_function import mlgw_bns_one_waveform
 
 
 def template_mlgw_bns(params, frequency_array):
@@ -565,7 +565,7 @@ def template_mlgw_bns(params, frequency_array):
     inclination             = params[3] # Inclination Angle
     time_shift              = params[8]
         
-    hp_mlgw,hc_mlgw             = mlgw_bns_one_waveform(jnp.array([frequency_array]),mtot,1/q,lambda_1,lambda_2, chi1, chi2,dist_mpc,phic,0,inclination)
+    hp_mlgw_bns,hc_mlgw_bns             = mlgw_bns_one_waveform(jnp.array([frequency_array]),mtot,1/q,lambda_1,lambda_2, chi1, chi2,dist_mpc,phic,0,inclination)
     
     hp,hc=hp_mlgw_bns,-hc_mlgw_bns
     

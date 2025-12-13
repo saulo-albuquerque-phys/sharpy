@@ -1,6 +1,7 @@
 import jax
 import jax.numpy as jnp
 import numpy
+from pathlib import Path
 from .loading_default_nn import full_reconstruct_data_NN_jax,from_combined_residuals_jit
 from .loading_default_nn import int_indexes_amp, int_indexes_phase
 from .jax_compacter_taylorf2jax_functions import phase_5h_post_newtonian_tidal_jax,  amplitude_3h_post_newtonian_jax
@@ -8,7 +9,11 @@ from .jax_compacter_model_functions import combine_amp_phase_jax,combine_residua
 from .jax_compacter_downsampling_interpolation import resample, linear_resample_jax
 from .jax_compacter_dataset_generation import mlgw_bns_prefactor_jax, eta
 
-model_dataset_bibl=numpy.load("./data_default_NN/mlp_jax_dataset_training_hyperparams.npz")
+# Get the directory where this file is located
+_current_dir = Path(__file__).parent
+_data_dir = _current_dir / "data_default_NN"
+
+model_dataset_bibl=numpy.load(str(_data_dir / "mlp_jax_dataset_training_hyperparams.npz"))
 
 frequencies_hz=model_dataset_bibl['frequencies_hz']
 frequencies=model_dataset_bibl['frequencies']
