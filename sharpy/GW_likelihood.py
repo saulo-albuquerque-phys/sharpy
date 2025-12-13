@@ -548,7 +548,7 @@ def single_detector_log_likelihood(params, detector_dictionary):
 
 
 
-
+from mlgw_bns_jax.jax_compacter_final_function import mlgw_bns_one_waveform
 
 
 def template_mlgw_bns(params, frequency_array):
