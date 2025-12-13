@@ -541,3 +541,90 @@ def single_detector_log_likelihood(params, detector_dictionary):
     h = project_waveform(params, detector_dictionary)
     residuals = detector_dictionary.FrequencySeries - h
     return -detector_dictionary.TwoDeltaTOverN * jnp.vdot(residuals / jnp.sqrt(detector_dictionary.sigmasq), residuals / jnp.sqrt(detector_dictionary.sigmasq)).real
+
+
+
+######Likelihood for ML surrogate model for Gravitational Waves (namely MLGW or MLGW-BNS)
+
+
+
+
+
+
+
+
+def template_mlgw_bns(params, frequency_array):
+    mc                      = params[6]
+    q                       = params[7]
+    m1_msun, m2_msun        = McQ2Masses(mc, q)
+    chi1                    = params[9] # Dimensionless spin
+    chi2                    = params[10]
+    tc                      = 0.0 # Time of coalescence in seconds
+    phic                    = params[4] # Phase of coalescence
+    dist_mpc                = jnp.exp(params[2]) # Distance to source in Mpc
+    inclination             = params[3] # Inclination Angle
+
+    # The PhenomD waveform model is parameterized with the chirp mass and symmetric mass ratio
+    Mc, eta           = ms_to_Mc_eta(jnp.array([m1_msun, m2_msun]))
+
+    theta_ripple      = jnp.array([Mc, eta, chi1, chi2, dist_mpc, tc, phic, inclination])
+    # hp, hc       = IMRPhenomD.gen_IMRPhenomD_hphc(frequency_array, theta_ripple, frequency_array[0]) 
+    hp, hc            = jax.vmap(IMRPhenomD.gen_IMRPhenomD_hphc, in_axes=(0, None, None))(jnp.array([frequency_array]), theta_ripple, 20)
+
+    # jax.debug.print("Max hp: {}, Max hc: {}", jnp.max(jnp.abs(hp)), jnp.max(jnp.abs(hc)))
+    return hp, hc 
+
+
+
+
+def project_waveform_mlgw_bns(params, detector_dictionary):
+    
+    f = detector_dictionary.Frequency
+
+    h_plus, h_cross = template_mlgw_bns(params, f)
+    # h_plus, h_cross   = TaylorF2(params, f)
+
+
+
+    latitude = detector_dictionary.latitude
+    longitude = detector_dictionary.longitude
+    gamma     = detector_dictionary.gamma
+    zeta      = detector_dictionary.zeta
+    elevation = detector_dictionary.elevation
+
+    
+    fplus, fcross   = antenna_pattern_functions(params, latitude, longitude, gamma, zeta)
+
+
+    ra = params[0]
+    dec = params[1]
+    tc  = detector_dictionary.trigtime + params[8]
+
+    timedelay       = TimeDelayFromEarthCenter(latitude, longitude, elevation, ra, dec, tc)
+    
+    timeshift       = timedelay
+    timeshift       = timeshift + (params[8] + (detector_dictionary.T - 1) )
+    
+    shift           = 2.0*np.pi*f*timeshift
+
+  
+    h = (fplus*h_plus + fcross*h_cross)*(jnp.cos(shift)-1j*jnp.sin(shift))
+    return h
+
+
+
+
+
+def log_likelihood_det_mlgw_bns(params, detector_list):
+
+    log_likelihoods = jax.vmap(single_detector_log_likelihood_mlgw_bns, in_axes=(None, 0))(params, detector_list)
+
+    # Then use jnp.sum
+    return jnp.sum(log_likelihoods)
+
+
+def single_detector_log_likelihood_mlgw_bns(params, detector_dictionary):
+
+    h = project_waveform_mlgw_bns(params, detector_dictionary)
+    residuals = detector_dictionary.FrequencySeries - h
+    return -detector_dictionary.TwoDeltaTOverN * jnp.vdot(residuals / jnp.sqrt(detector_dictionary.sigmasq), residuals / jnp.sqrt(detector_dictionary.sigmasq)).real
