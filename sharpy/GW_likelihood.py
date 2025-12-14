@@ -39,7 +39,7 @@ def data_case_to_consider(case):
 
 #######make your choice here!!!!!
 
-choice='bbh'
+choice='bns'
 case_choice_data=data_case_to_consider(choice)
 
 
