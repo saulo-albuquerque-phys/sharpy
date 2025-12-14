@@ -29,13 +29,21 @@ case_bns='Gw170817'
 case_bbh_data={"name":case_bbh,'trigtime':1126259462.4, 'T':2, 'sampling_rate':1024, 'flow':20, 'fhigh':512, 'datalen_download':32, }
 case_bns_data={"name":case_bns,'trigtime':1187008882.4, 'T':2, 'sampling_rate':4096, 'flow':20, 'fhigh':2048, 'datalen_download':128, }
 
-
+def data_case_to_consider(case):
+    if case=='bbh':
+        return case_bbh_data
+    elif  case=='bns':
+        return case_bns_data
+    else:
+        print("The choice made is not accetable!")
 
 #######make your choice here!!!!!
 
 choice='bbh'
-case_choice_name='case_'+choice
-case_choice_data=case_choice_name+'_data'
+case_choice_data=data_case_to_consider(choice)
+
+
+
     
 
 class GWDetector:
@@ -56,15 +64,15 @@ class GWDetector:
                  datafile           = None,
                  psd_file           = 'None',
                  psd_method         = 'welch',
-                 T                  = 2.0,
-                 trigtime           = 1126259462.4,
-                 sampling_rate      = 1024,
-                 flow               = 20,
-                 fhigh              = 512,
+                 T                  = case_choice_data['T'],
+                 trigtime           = case_choice_data['trigtime'],
+                 sampling_rate      = case_choice_data['sampling_rate'],
+                 flow               = case_choice_data['flow'],
+                 fhigh              = case_choice_data['fhigh'],
                  zero_noise         = True,
                  calibration        = None,
                  download_data      = 0,
-                 datalen_download   = 32,
+                 datalen_download   = case_choice_data['datalen_download'],
                  channel            = '',
                  gwpy_tag           = None):
         
@@ -276,13 +284,13 @@ class GWNetwork:
                                     channel          = self.detectors_settings[name]['channel'] if 'channel' in self.detectors_settings[name] else None, 
                                     psd_file         = self.detectors_settings[name]['psd_file'] if 'psd_file' in self.detectors_settings[name] else None,
                                     datafile         = self.detectors_settings[name]['data_file'] if 'data_file' in self.detectors_settings[name] else None,
-                                    T                = self.detectors_settings[name]['duration'] if 'duration' in self.detectors_settings[name] else 2.0,
-                                    sampling_rate    = self.detectors_settings[name]['sampling_rate'] if 'sampling_rate' in self.detectors_settings[name] else 1024,
-                                    flow             = self.detectors_settings[name]['f_lower'] if 'f_lowr' in self.detectors_settings[name] else 20.0,
-                                    fhigh            = self.detectors_settings[name]['f_upper'] if 'f_high' in self.detectors_settings[name] else 512.0,
-                                    trigtime         = self.detectors_settings[name]['trigger_time'] if 'trigger_time' in self.detectors_settings[name] else 1126259462.4,
+                                    T                = self.detectors_settings[name]['duration'] if 'duration' in self.detectors_settings[name] else case_choice_data['T'],
+                                    sampling_rate    = self.detectors_settings[name]['sampling_rate'] if 'sampling_rate' in self.detectors_settings[name] else case_choice_data['sampling_rate'],
+                                    flow             = self.detectors_settings[name]['f_lower'] if 'f_lowr' in self.detectors_settings[name] else case_choice_data['flow'],
+                                    fhigh            = self.detectors_settings[name]['f_upper'] if 'f_high' in self.detectors_settings[name] else case_choice_data['fhigh'],
+                                    trigtime         = self.detectors_settings[name]['trigger_time'] if 'trigger_time' in self.detectors_settings[name] else case_choice_data['trigtime'],
                                     download_data    = self.detectors_settings[name]['download_data'] if 'download_data' in self.detectors_settings[name] else False, 
-                                    datalen_download = self.detectors_settings[name]['datalen_download'] if 'datalen_download' in self.detectors_settings[name] else 32, 
+                                    datalen_download = self.detectors_settings[name]['datalen_download'] if 'datalen_download' in self.detectors_settings[name] else case_choice_data['datalen_download'], 
                                     zero_noise       = self.detectors_settings[name]['zero_noise'] if 'zero_noise' in self.detectors_settings[name] else False,
 
                                           ).__dict__ for name in detector_names
@@ -371,7 +379,7 @@ def antenna_pattern_functions(params, det_latitute, det_longitude, det_gamma, de
 
     pol = params[5]
     
-    tc  = np.float64(1126259462.4) + params[8]
+    tc  = np.float64(case_choice_data['trigtime']) + params[8]
     lat = jnp.radians(det_latitute)
     g_ = jnp.radians(det_gamma)
     z_ = jnp.radians(det_zeta)
