@@ -225,6 +225,38 @@ def inject_signal_in_detector(params, detector_dictionary):
         return detector_dictionary, SNR
 
 
+def inject_signal_in_detector_mlgw_bns(params, detector_dictionary):
+        """
+        Inject a signal into the detector noise.
+        """
+        h           = project_waveform_mlgw_bns(params, detector_dictionary)
+
+        # add to the detector noise
+        detector_dictionary.FrequencySeries += h
+
+        df          = detector_dictionary.Frequency[1] - detector_dictionary.Frequency[0]
+
+        # signal-to-noise ratio
+        SNR         = jnp.sqrt(4.0*df*jnp.sum(jnp.conj(h)*h/detector_dictionary.PowerSpectralDensity).real)
+        
+        return detector_dictionary, SNR
+
+def inject_signal_in_detector_mlgw_bbh(params, detector_dictionary):
+        """
+        Inject a signal into the detector noise.
+        """
+        h           = project_waveform_mlgw_bbh(params, detector_dictionary)
+
+        # add to the detector noise
+        detector_dictionary.FrequencySeries += h
+
+        df          = detector_dictionary.Frequency[1] - detector_dictionary.Frequency[0]
+
+        # signal-to-noise ratio
+        SNR         = jnp.sqrt(4.0*df*jnp.sum(jnp.conj(h)*h/detector_dictionary.PowerSpectralDensity).real)
+        
+        return detector_dictionary, SNR
+
 
 class GWNetwork:
     """
