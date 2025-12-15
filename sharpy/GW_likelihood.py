@@ -830,7 +830,7 @@ def project_waveform_mlgw_bbh(params, detector_dictionary):
 
 def log_likelihood_det_mlgw_bbh(params, detector_list):
 
-    log_likelihoods = jax.vmap(single_detector_log_likelihood_mlgw_bns, in_axes=(None, 0))(params, detector_list)
+    log_likelihoods = jax.vmap(single_detector_log_likelihood_mlgw_bbh, in_axes=(None, 0))(params, detector_list)
 
     # Then use jnp.sum
     return jnp.sum(log_likelihoods)
@@ -838,7 +838,7 @@ def log_likelihood_det_mlgw_bbh(params, detector_list):
 
 def single_detector_log_likelihood_mlgw_bbh(params, detector_dictionary):
 
-    h = project_waveform_mlgw_bns(params, detector_dictionary)
+    h = project_waveform_mlgw_bbh(params, detector_dictionary)
     residuals = detector_dictionary.FrequencySeries - h
     return -detector_dictionary.TwoDeltaTOverN * jnp.vdot(residuals / jnp.sqrt(detector_dictionary.sigmasq), residuals / jnp.sqrt(detector_dictionary.sigmasq)).real
 
