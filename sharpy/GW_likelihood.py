@@ -704,10 +704,11 @@ def single_detector_log_likelihood_mlgw_bns(params, detector_dictionary):
 
 
 
+### Remove the # when you want to use this model here
 
 
-
-
+#from mlgw.GW_generator import GW_generator
+#gwgen = GW_generator()
 
 
 
@@ -792,12 +793,12 @@ def project_waveform_mlgw_bbh(params, detector_dictionary):
     h_c                     = h_c*window
     # windowNorm     = duration/jnp.sum(window**2)
     # SQRTwindowNorm = jnp.sqrt(windowNorm)
-    h_p_f                   = np.fft.rfft(h_p) / sampling_frequency
-    h_c_f                   = np.fft.rfft(h_c) / sampling_frequency
-    freq_array_mlgw         = np.fft.rfftfreq(len(h_p),1/sampling_frequency)
+    h_p_f                   = jnp.fft.rfft(h_p) / sampling_frequency
+    h_c_f                   = jnp.fft.rfft(h_c) / sampling_frequency
+    freq_array_mlgw         = jnp.fft.rfftfreq(len(h_p),1/sampling_frequency)
 
-    h_p_f_interp            = np.interp(f,freq_array_mlgw,h_p_f,left=0.0,right=0.0)
-    h_c_f_interp            = np.interp(f,freq_array_mlgw,h_c_f,left=0.0,right=0.0) 
+    h_p_f_interp            = jnp.interp(f,freq_array_mlgw,h_p_f,left=0.0,right=0.0)
+    h_c_f_interp            = jnp.interp(f,freq_array_mlgw,h_c_f,left=0.0,right=0.0) 
 
     h_plus                  = h_p_f_interp
     h_cross                 = h_c_f_interp
