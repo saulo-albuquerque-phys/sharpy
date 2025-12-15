@@ -169,11 +169,7 @@ class GWDetector:
         self.zeta       = self.available_detectors[name][3]
         self.elevation  = self.available_detectors[name][4] 
 
-        ## setting mlgw bbh stuff
-        self.Times_MLGW = jnp.arange(0, self.T, 1/self.sampling_rate)-self.T + 1
-        self.n_tukey    = jnp.arange(self.segment_length)
-        self.w_tukey    = jnp.ones((self.segment_length,))
-        self.modes=(2,2)
+
 
 
 from flax import struct
