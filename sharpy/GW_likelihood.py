@@ -595,7 +595,7 @@ def single_detector_log_likelihood(params, detector_dictionary):
 
 
 
-######Likelihood for ML surrogate model for Gravitational Waves (namely MLGW or MLGW-BNS)
+######Likelihood for ML surrogate model for Gravitational Waves (namely MLGW-BNS)
 
 
 
@@ -686,4 +686,155 @@ def single_detector_log_likelihood_mlgw_bns(params, detector_dictionary):
     h = project_waveform_mlgw_bns(params, detector_dictionary)
     residuals = detector_dictionary.FrequencySeries - h
     return -detector_dictionary.TwoDeltaTOverN * jnp.vdot(residuals / jnp.sqrt(detector_dictionary.sigmasq), residuals / jnp.sqrt(detector_dictionary.sigmasq)).real
+
+
+
+
+
+
+
+######Likelihood for ML surrogate model for Gravitational Waves (namely MLGW-BNS)
+
+
+
+
+
+
+
+
+
+
+
+def tukey_window(M, n, w,  alpha: float = 0.5):
+    """
+    JAX implementation of the Tukey window (tapered cosine).
+    Matches scipy.signal.windows.tukey behavior.
+
+    
+    """
+
+    M = len(w)
+    n = jnp.arange(M)
+    w = jnp.ones((M,))
+
+    ### These pieces should be here for completeness, but they are not needed in our case. 
+    ### We usually set alpha = 0.4/duration 
+
+    # if alpha <= 0:
+    #     return w
+    # elif alpha >= 1:
+    #     return 0.5 * (1 - jnp.cos(2 * jnp.pi * n / (M - 1)))
+
+    # Piecewise definition
+    first_condition = n < alpha * (M - 1) / 2
+    third_condition = n >= (M - 1) * (1 - alpha / 2)
+
+    w = jnp.where(
+        first_condition,
+        0.5 * (1 + np.cos(np.pi * ((2 * n) / (alpha * (M - 1)) - 1))),
+        w,
+    )
+
+    w = jnp.where(
+        third_condition,
+        0.5 * (1 + np.cos(np.pi * ((2 * n) / (alpha * (M - 1)) - 2 / alpha + 1))),
+        w,
+    )
+
+    return w
+
+def template_mlgw_bbh(params, time_array, modes):
+
+    mc                      = params[6]
+    q                       = params[7]
+    m1_msun, m2_msun        = McQ2Masses(mc, q)
+    chi1                    = params[9] # Dimensionless spin
+    chi2                    = params[10]
+    
+    phic                    = params[4] 
+    dist_mpc                = jnp.exp(params[2]) # Distance to source in Mpc
+    inclination             = params[3] # Inclination Angle
+    time_shift              = params[8]
+    theta_mlgw_bbh          = jnp.array([m1_msun, m2_msun, chi1, chi2, dist_mpc, inclination, phic])
+    
+    hp, hc            = jax.vmap(gwgen.get_WF, in_axes=(0, None,None))(jnp.array([time_array]), theta_mlgw_bbh,modes)
+    
+    ### the minus sign compensates the difference in the convention for h=hp+- i*hc
+    return hp, -hc
+
+
+
+
+def project_waveform_mlgw_bbh(params, detector_dictionary):
+    
+    f = detector_dictionary.Frequency
+    duration=detector_dictionary.T
+    sampling_rate=detector_dictionary.sampling_rate
+    ## to subsitute with the precomputed value 
+    time_array_mlgw         = detector_dictionary.Times_MLGW
+    segment_length          = detector_dictionary.segment_length
+    n                       = detector_dictionary.n_tukey
+    w                       = detector_dictionary.w_tukey
+    modes_mlgw              = detector_dictionary.modes_mlgw
+    
+    
+    h_p, h_c = template_mlgw_bbh(params, time_array_mlgw, modes_mlgw)
+
+    padding                 = 0.4/duration
+    window                  = tukey_window(segment_length,n, w, padding)
+    h_p                     = h_p*window
+    h_c                     = h_c*window
+    # windowNorm     = duration/jnp.sum(window**2)
+    # SQRTwindowNorm = jnp.sqrt(windowNorm)
+    h_p_f                   = np.fft.rfft(h_p) / sampling_frequency
+    h_c_f                   = np.fft.rfft(h_c) / sampling_frequency
+    freq_array_mlgw         = np.fft.rfftfreq(len(h_p),1/sampling_frequency)
+
+    h_p_f_interp            = np.interp(f,freq_array_mlgw,h_p_f,left=0.0,right=0.0)
+    h_c_f_interp            = np.interp(f,freq_array_mlgw,h_c_f,left=0.0,right=0.0) 
+
+    h_plus                  = h_p_f_interp
+    h_cross                 = h_c_f_interp
+
+    latitude = detector_dictionary.latitude
+    longitude = detector_dictionary.longitude
+    gamma     = detector_dictionary.gamma
+    zeta      = detector_dictionary.zeta
+    elevation = detector_dictionary.elevation
+
+    
+    fplus, fcross   = antenna_pattern_functions(params, latitude, longitude, gamma, zeta)
+
+
+    ra = params[0]
+    dec = params[1]
+    tc  = detector_dictionary.trigtime + params[8]
+
+    timedelay       = TimeDelayFromEarthCenter(latitude, longitude, elevation, ra, dec, tc)
+    
+    timeshift       = timedelay
+    timeshift       = timeshift + (params[8] + (detector_dictionary.T - 1) )
+    
+    shift           = 2.0*jnp.pi*f*timeshift
+
+  
+    h = (fplus*h_plus + fcross*h_cross)*(jnp.cos(shift)-1j*jnp.sin(shift))
+    return h
+
+def log_likelihood_det_mlgw_bbh(params, detector_list):
+
+    log_likelihoods = jax.vmap(single_detector_log_likelihood_mlgw_bns, in_axes=(None, 0))(params, detector_list)
+
+    # Then use jnp.sum
+    return jnp.sum(log_likelihoods)
+
+
+def single_detector_log_likelihood_mlgw_bbh(params, detector_dictionary):
+
+    h = project_waveform_mlgw_bns(params, detector_dictionary)
+    residuals = detector_dictionary.FrequencySeries - h
+    return -detector_dictionary.TwoDeltaTOverN * jnp.vdot(residuals / jnp.sqrt(detector_dictionary.sigmasq), residuals / jnp.sqrt(detector_dictionary.sigmasq)).real
+
+
+
 
