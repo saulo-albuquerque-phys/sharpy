@@ -737,13 +737,13 @@ def tukey_window(M, n, w,  alpha: float = 0.5):
 
     w = jnp.where(
         first_condition,
-        0.5 * (1 + np.cos(np.pi * ((2 * n) / (alpha * (M - 1)) - 1))),
+        0.5 * (1 + jnp.cos(jnp.pi * ((2 * n) / (alpha * (M - 1)) - 1))),
         w,
     )
 
     w = jnp.where(
         third_condition,
-        0.5 * (1 + np.cos(np.pi * ((2 * n) / (alpha * (M - 1)) - 2 / alpha + 1))),
+        0.5 * (1 + jnp.cos(jnp.pi * ((2 * n) / (alpha * (M - 1)) - 2 / alpha + 1))),
         w,
     )
 
