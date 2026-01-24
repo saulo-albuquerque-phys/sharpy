@@ -515,18 +515,23 @@ def template(params, frequency_array):
     # jax.debug.print("Max hp: {}, Max hc: {}", jnp.max(jnp.abs(hp)), jnp.max(jnp.abs(hc)))
     return hp, hc 
 
+
+
+
+
 #from mlgw.GW_generator import GW_generator
 from mlgw.GW_FD_generator import GW_FD_generator
 #gwgen = GW_generator()
-gw_fd_generator=GW_FD_generator(duration=2., sampling_frequency=1024, final_time=1., modes=(2,2), alpha_left=0.1, alpha_right=0.001)
+gw_fd_generator=GW_FD_generator(duration=2., sampling_frequency=4096, final_time=1., modes=(2,2), alpha_left=0.1, alpha_right=0.1)
+mlgw_freq_array=gw_fd_generator.frequency_array
 
 # @jax.jit
 def waveform_mlgw(theta):
     wf=gw_fd_generator.frequency_domain_strain(theta)
-    return wf["plus"],wf["cross"]
+    return wf["plus"][0],wf["cross"][0]
 
 
-def template_mlgw_bbh(params):
+def template_mlgw_bbh(params,frequency_array):
 
     mc                      = params[6]
     q                       = params[7]
@@ -540,7 +545,9 @@ def template_mlgw_bbh(params):
     time_shift              = params[8]
     theta_mlgw_bbh          = jnp.array([m1_msun, m2_msun, chi1, chi2, dist_mpc, inclination, phic])
     
-    hp, hc            = waveform_mlgw(theta_mlgw_bbh)
+    hp_0, hc_0            = waveform_mlgw(theta_mlgw_bbh)
+    hp                    = jnp.interp(frequency_array,mlgw_freq_array,hp_0)
+    hc                    = jnp.interp(frequency_array,mlgw_freq_array,hc_0)
     
     ### the minus sign compensates the difference in the convention for h=hp+- i*hc
     return hp, -hc
