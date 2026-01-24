@@ -522,7 +522,7 @@ gw_fd_generator=GW_FD_generator(duration=2., sampling_frequency=1024, final_time
 
 # @jax.jit
 def waveform_mlgw(theta):
-    wf=gw_fd_generator.frequency_domain_strain
+    wf=gw_fd_generator.frequency_domain_strain(theta)
     return wf["plus"],wf["cross"]
 
 
@@ -540,7 +540,7 @@ def template_mlgw_bbh(params):
     time_shift              = params[8]
     theta_mlgw_bbh          = jnp.array([m1_msun, m2_msun, chi1, chi2, dist_mpc, inclination, phic])
     
-    hp, hc            = jax.vmap(waveform_mlgw, in_axes=(None))(theta_mlgw_bbh)
+    hp, hc            = waveform_mlgw(theta_mlgw_bbh)
     
     ### the minus sign compensates the difference in the convention for h=hp+- i*hc
     return hp, -hc
