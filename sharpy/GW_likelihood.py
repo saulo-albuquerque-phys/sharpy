@@ -515,9 +515,72 @@ def template(params, frequency_array):
     # jax.debug.print("Max hp: {}, Max hc: {}", jnp.max(jnp.abs(hp)), jnp.max(jnp.abs(hc)))
     return hp, hc 
 
+#from mlgw.GW_generator import GW_generator
+from mlgw.GW_FD_generator import GW_FD_generator
+#gwgen = GW_generator()
+gw_fd_generator=GW_FD_generator(duration=2., sampling_frequency=1024, final_time=1., modes=(2,2), alpha_left=0.1, alpha_right=0.001)
+
+# @jax.jit
+def waveform_mlgw(theta)
+    wf=gw_fd_generator.frequency_domain_strain
+    return wf["plus"],wf["cross"]
+
+
+def template_mlgw_bbh(params):
+
+    mc                      = params[6]
+    q                       = params[7]
+    m1_msun, m2_msun        = McQ2Masses(mc, q)
+    chi1                    = params[9] # Dimensionless spin
+    chi2                    = params[10]
+    
+    phic                    = params[4] 
+    dist_mpc                = jnp.exp(params[2]) # Distance to source in Mpc
+    inclination             = params[3] # Inclination Angle
+    time_shift              = params[8]
+    theta_mlgw_bbh          = jnp.array([m1_msun, m2_msun, chi1, chi2, dist_mpc, inclination, phic])
+    
+    hp, hc            = jax.vmap(waveform_mlgw, in_axes=(None))(theta_mlgw_bbh)
+    
+    ### the minus sign compensates the difference in the convention for h=hp+- i*hc
+    return hp, -hc
 
 
 
+def project_waveform_mlgw(params, detector_dictionary):
+    
+    f = detector_dictionary.Frequency
+
+    h_plus, h_cross = template_mlgw_bbh(params)
+    # h_plus, h_cross   = TaylorF2(params, f)
+
+
+
+    latitude        = detector_dictionary.latitude
+    longitude       = detector_dictionary.longitude
+    gamma           = detector_dictionary.gamma
+    zeta            = detector_dictionary.zeta
+    elevation       = detector_dictionary.elevation
+    trigger_time    = detector_dictionary.trigtime
+
+    
+    fplus, fcross   = antenna_pattern_functions(params, latitude, longitude, gamma, zeta, trigger_time)
+
+
+    ra = params[0]
+    dec = params[1]
+    tc  = trigger_time + params[8]
+
+    timedelay       = TimeDelayFromEarthCenter(latitude, longitude, elevation, ra, dec, tc)
+    
+    timeshift       = timedelay
+    timeshift       = timeshift + (params[8] + (detector_dictionary.T - 1) )
+    
+    shift           = 2.0*np.pi*f*timeshift
+
+  
+    h = (fplus*h_plus + fcross*h_cross)*(jnp.cos(shift)-1j*jnp.sin(shift))
+    return h
 
 
 
@@ -540,5 +603,28 @@ def log_likelihood_det(params, detector_list):
 def single_detector_log_likelihood(params, detector_dictionary):
 
     h = project_waveform(params, detector_dictionary)
+    residuals = detector_dictionary.FrequencySeries - h
+    return -detector_dictionary.TwoDeltaTOverN * jnp.vdot(residuals / jnp.sqrt(detector_dictionary.sigmasq), residuals / jnp.sqrt(detector_dictionary.sigmasq)).real
+
+
+######Likelihood MLGW
+
+
+
+
+
+
+
+def log_likelihood_det_mlgw(params, detector_list):
+
+    log_likelihoods = jax.vmap(single_detector_log_likelihood_mlgw, in_axes=(None, 0))(params, detector_list)
+
+    # Then use jnp.sum
+    return jnp.sum(log_likelihoods)
+
+
+def single_detector_log_likelihood_mlgw(params, detector_dictionary):
+
+    h = project_waveform_mlgw(params, detector_dictionary)
     residuals = detector_dictionary.FrequencySeries - h
     return -detector_dictionary.TwoDeltaTOverN * jnp.vdot(residuals / jnp.sqrt(detector_dictionary.sigmasq), residuals / jnp.sqrt(detector_dictionary.sigmasq)).real
