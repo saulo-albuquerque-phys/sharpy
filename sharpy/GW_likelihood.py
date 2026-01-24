@@ -521,7 +521,7 @@ from mlgw.GW_FD_generator import GW_FD_generator
 gw_fd_generator=GW_FD_generator(duration=2., sampling_frequency=1024, final_time=1., modes=(2,2), alpha_left=0.1, alpha_right=0.001)
 
 # @jax.jit
-def waveform_mlgw(theta)
+def waveform_mlgw(theta):
     wf=gw_fd_generator.frequency_domain_strain
     return wf["plus"],wf["cross"]
 
