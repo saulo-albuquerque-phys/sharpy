@@ -558,7 +558,7 @@ def project_waveform_mlgw(params, detector_dictionary):
     
     f = detector_dictionary.Frequency
 
-    h_plus, h_cross = template_mlgw_bbh(params)
+    h_plus, h_cross = template_mlgw_bbh(params,f)
     # h_plus, h_cross   = TaylorF2(params, f)
 
 
