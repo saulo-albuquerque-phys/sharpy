@@ -520,10 +520,10 @@ def template(params, frequency_array):
 
 
 #from mlgw.GW_generator import GW_generator
-from mlgw.GW_FD_generator import GW_FD_generator
+#from mlgw.GW_FD_generator import GW_FD_generator
 #gwgen = GW_generator()
-gw_fd_generator=GW_FD_generator(duration=2., sampling_frequency=1024, final_time=0.1, modes=(2,2), alpha_left=0.3, alpha_right=0.01)
-mlgw_freq_array=gw_fd_generator.frequency_array
+#gw_fd_generator=GW_FD_generator(duration=2., sampling_frequency=1024, final_time=0.1, modes=(2,2), alpha_left=0.3, alpha_right=0.01)
+#mlgw_freq_array=gw_fd_generator.frequency_array
 
 # @jax.jit
 def waveform_mlgw(theta):
