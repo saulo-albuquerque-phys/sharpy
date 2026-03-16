@@ -9,13 +9,17 @@ from netket.jax import vmap_chunked
 import json
 import os
 
+chunk_size_mass=200
+chunk_size_kernel=500
+
+
 def build_mass_matrix_fn(log_posterior):
     #build mass matrix function
     def single(pos, beta):
         logdensity = lambda x: log_posterior(x, beta)
         return compute_mass_matrix(logdensity, pos)
     #use vmap_chunked to avoid OOM for large number of particles
-    return jax.jit(vmap_chunked(single, in_axes=(0, None),chunk_size = 1000, axis_0_is_sharded=False)) 
+    return jax.jit(vmap_chunked(single, in_axes=(0, None),chunk_size = chunk_size_mass, axis_0_is_sharded=False)) 
 
 
 
@@ -40,7 +44,7 @@ def build_kernel_fn(kernel, log_posterior, step_size):
         logdensity_fn = lambda x: log_posterior(x, beta)
         return kernel(rng_key, state, logdensity_fn, step_size, metric, max_num_doublings=6)
     # JIT-compile the batched kernel function
-    batched_kernel = jax.jit(vmap_chunked(_kernel, in_axes=(0, 0, 0, 0), chunk_size = 9000, axis_0_is_sharded=False))
+    batched_kernel = jax.jit(vmap_chunked(_kernel, in_axes=(0, 0, 0, 0), chunk_size = chunk_size_kernel, axis_0_is_sharded=False))
     return batched_kernel
 
 
